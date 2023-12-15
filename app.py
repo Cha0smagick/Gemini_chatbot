@@ -39,10 +39,10 @@ def generate_response(cleaned_input, model):
     except Exception as e:
         error_message = str(e)
         if "text must be a valid text with maximum 5000 character" in error_message and not error_flag:
-            error_response = ("La pregunta que está realizando puede que vaya en contra de las políticas de Google Bard e INIF. "
+            error_response = ("La pregunta que está realizando puede que vaya en contra de las políticas de Google GEMINI: WiseOracle"
                               "Por favor, reformule su pregunta sin temas no permitidos o pregunte algo diferente. "
                               "Para más información consulte: https://policies.google.com/terms/generative-ai/use-policy "
-                              "o www.inif.com.co/laura-chatbot/use-policy")
+                             )
             st.error(error_response)
             error_flag = True  # Set the error_flag to True after displaying the error message
             return error_response
@@ -52,18 +52,18 @@ def generate_response(cleaned_input, model):
             return error_response
 
 def main():
-    st.title("Chatbot INIF - TERMINATOR")
+    st.title("WiseOracle")
     genai.configure(api_key='y')  # Replace with your Gemini API key
 
     # Choose the Gemini model
     model = genai.GenerativeModel('gemini-pro')
 
-    st.write("Bienvenido al Chatbot informativo del Instituto Nacional de Investigación y Prevención del Fraude (INIF).")
+    st.write("Ask Anything! Powered by Google GEMINI")
 
     # User input
-    user_input = st.text_input("Pregunta:")
+    user_input = st.text_input("Question:")
 
-    if st.button("Obtener Respuesta"):
+    if st.button("Get answer"):
         # Translate the question to English
         translated_input = translate_text(user_input, target_language='en')
 
@@ -77,29 +77,22 @@ def main():
 
         # Additional information about INIF
         additional_info = (
-            "Trabajamos para empresarios y colaboradores de cualquier industria que buscan combatir el fraude que impacta negativamente la reputación y la economía de sus organizaciones y del país.\n"
-            "Somos una empresa privada que trabaja con la industria bancaria y aseguradora."
+            "if you wanna collaborate to the proyect suscribe on hugginface or github\n"
+            "If you wanna donate, plz donate on bitcoin: 3KcF1yrY44smTJpVW68m8dw8q64kPtzvtX"
         )
 
         # Add the command to act as an INIF informative chatbot
         bot_command = (
-            "I am an informative data analyst chatbot named TERMINATOR, working for the National Institute of Fraud Research and Prevention (INIF), dedicated to fraud prevention and mitigation. "
-            "If you have questions related to fraud or prevention, feel free to ask. For inquiries about other topics, I'll redirect you to the fraud prevention context."
+            "I am an informative data analyst chatbot named WiseOracle, working for you as an assistant. "
+            "If you have questions about anything, feel free to ask."
             f"\n\n{additional_info}"
-            "\n\nContact Information for INIF:"
-            "\nPhone: +57 317 638 94 71"
-            "\nEmail: atencionalcliente@inif.com.co"
-            "\n\nOur Mission:"
-            "\nTo be the most reliable engine of knowledge, research, and information in Colombia, capable of preventing and combating fraud through synergy between our team and companies."
-            "\n\nOur Vision:"
-            "\nTo lead the construction of a more honest culture, allowing us to progress as a society."
         )
 
         # Generate the response
         translated_output = generate_response(bot_command + cleaned_input, model)
 
         # Display the generated response in green or red based on the content
-        if "La pregunta que está realizando puede que vaya en contra de las políticas de Google Bard e INIF." in translated_output:
+        if "La pregunta que está realizando puede que vaya en contra de las políticas de Google Gemini: WiseOracle" in translated_output:
             st.error(translated_output)
         else:
             st.success(translated_output)
