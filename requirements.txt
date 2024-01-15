@@ -1,4 +1,7 @@
 streamlit
-deep-translator
 google-generativeai
-IPython
+python-dotenv
+langchain
+PyPDF2
+faiss-cpu
+langchain_google_genai
