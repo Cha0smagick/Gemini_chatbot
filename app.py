@@ -54,55 +54,49 @@ def main():
                 st.markdown(f"Assistant: {to_markdown(parts[0])}")
 
     # Entrada del usuario
-    user_input = st.text_input("Tú:")
+    user_input = st.text_area("Tú:")
 
-    # Enviar mensaje del usuario al modelo Gemini
-    if st.button("Enviar"):
+    # Get optional image input if the model selected is 'gemini-pro-vision'
+    image_file = None
+    if select_model == 'gemini-pro-vision':
+        image_file = st.file_uploader("Sube una imagen (si aplica):", type=["jpg", "jpeg", "png"])
+
+        # Display image if provided
+        if image_file:
+            st.image(image_file, caption="Imagen subida", use_column_width=True)
+
+    # Botón para enviar mensaje o generar contenido según el modelo seleccionado
+    if st.button("Enviar / Generar Contenido"):
         if user_input:
             messages.append({"role": "user", "parts": [user_input]})
-            response = get_response(user_input)
+            if select_model == 'gemini-pro-vision':
+                # Modelo Gemini Vision Pro seleccionado
+                if not image_file:
+                    st.warning("Por favor, proporciona una imagen para el modelo gemini-pro-vision.")
+                else:
+                    image = Image.open(image_file)
+                    response = generate_gemini_content(user_input, model_name=select_model, image=image)
+                    if response:
+                        if response.candidates:
+                            parts = response.candidates[0].content.parts
+                            generated_text = parts[0].text if parts else "No se generó contenido."
+                            st.markdown(f"Assistant: {to_markdown(generated_text)}")
+                            messages.append({"role": "model", "parts": [generated_text]})
+                        else:
+                            st.warning("No se encontraron candidatos en la respuesta.")
+            else:
+                # Otros modelos Gemini seleccionados
+                response = get_response(user_input)
 
-            # Mostrar respuesta del modelo solo una vez
-            res_text = ""
-            for chunk in response:
-                res_text += chunk.text
-
-            st.markdown(f"Assistant: {to_markdown(res_text)}")
-            messages.append({"role": "model", "parts": [res_text]})
+                # Mostrar respuesta del modelo solo una vez
+                res_text = ""
+                for chunk in response:
+                    res_text += chunk.text
+                st.markdown(f"Assistant: {to_markdown(res_text)}")
+                messages.append({"role": "model", "parts": [res_text]})
 
     # Actualizar historial de mensajes en la sesión de Streamlit
     st.session_state["messages"] = messages
-
-    # Set the model to 'gemini-pro-vision'
-    model_name = 'gemini-pro-vision'
-
-    # Get user input prompt
-    prompt = st.text_area("Ingresa tu mensaje para Gemini Vision Pro:")
-
-    # Get optional image input
-    image_file = st.file_uploader("Sube una imagen (si aplica):", type=["jpg", "jpeg", "png"])
-
-    # Display image if provided
-    if image_file:
-        st.image(image_file, caption="Imagen subida", use_column_width=True)
-
-    # Generate content on button click
-    if st.button("Generar Contenido"):
-        st.markdown("### Contenido Generado:")
-        if not image_file:
-            st.warning("Por favor, proporciona una imagen para el modelo gemini-pro-vision.")
-        else:
-            image = Image.open(image_file)
-            response = generate_gemini_content(prompt, model_name=model_name, image=image)
-
-            # Display the generated content in Markdown format if response is available
-            if response:
-                if response.candidates:
-                    parts = response.candidates[0].content.parts
-                    generated_text = parts[0].text if parts else "No se generó contenido."
-                    st.markdown(to_markdown(generated_text))
-                else:
-                    st.warning("No se encontraron candidatos en la respuesta.")
 
 if __name__ == "__main__":
     main()
