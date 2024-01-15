@@ -1,85 +1,55 @@
 import streamlit as st
-import re
 import google.generativeai as genai
-from IPython.display import display, Markdown
 
-# TERMINATOR
+# Inicializar Streamlit
+st.set_page_config(page_title="Gemini Chatbot", page_icon="🤖")
 
-error_flag = False  # Global variable to track error display
+# Configurar la API key de Gemini
+genai.configure(api_key='your_gemini_api_key')  # Reemplazar con tu clave de API de Gemini
 
-def clean_text(text):
-    # Clean punctuation and special characters using regular expressions
-    cleaned_text = re.sub(r'[^a-zA-Z0-9\s]', '', text)
-    return cleaned_text
+# Seleccionar el modelo Gemini
+select_model = st.sidebar.selectbox("Selecciona el modelo", ["gemini-pro", "gemini-pro-vision"])
 
-def generate_response(cleaned_input, model):
-    global error_flag  # Use the global error_flag variable
+# Inicializar la sesión de chat
+chat = genai.GenerativeModel(select_model).start_chat(history=[])
 
-    try:
-        # Generate response using the model
-        response = model.generate_content(cleaned_input, stream=True)
+# Definir función para obtener respuesta del modelo Gemini
+def get_response(messages):
+    response = chat.send_message(messages, stream=True)
+    return response
 
-        # Display the generated response
-        full_response = ""
+# Interfaz de usuario Streamlit
+st.title("Gemini Chatbot")
+st.sidebar.title("Configuración de Gemini")
+
+# Historial del chat
+if "messages" not in st.session_state:
+    st.session_state["messages"] = []
+
+messages = st.session_state["messages"]
+
+# Mostrar mensajes del historial
+if messages:
+    for message in messages:
+        role, parts = message.values()
+        st.chat_message(role.lower()).markdown(parts[0])
+
+# Entrada del usuario
+user_input = st.text_input("Tú:", key="user_input")
+
+# Enviar mensaje del usuario al modelo Gemini
+if st.button("Enviar"):
+    if user_input:
+        messages.append({"role": "user", "parts": [user_input]})
+        response = get_response(user_input)
+
+        # Mostrar respuesta del modelo solo una vez
+        res_text = ""
         for chunk in response:
-            full_response += chunk.text
+            res_text += chunk.text
+        st.chat_message("assistant").markdown(res_text)
 
-        return full_response
+        messages.append({"role": "model", "parts": [res_text]})
 
-    except Exception as e:
-        error_message = str(e)
-        if "text must be a valid text with maximum 5000 character" in error_message and not error_flag:
-            error_response = ("The question you are asking may go against Google GEMINI policies: WiseOracle"
-                              "Please reformulate your question without forbidden topics or ask something else. "
-                              "For more information, see: https://policies.google.com/terms/generative-ai/use-policy "
-                             )
-            st.error(error_response)
-            error_flag = True  # Set the error_flag to True after displaying the error message
-            return error_response
-        else:
-            error_response = f"Error: {error_message}\nSorry, I am an artificial intelligence that is still in development and is in alpha phase. At the moment, I cannot answer your question properly, but in the future, I will be able to do so."
-            st.error(error_response)
-            return error_response
-
-def main():
-    st.title("WiseOracle")
-    genai.configure(api_key='your_google_api_key')  # Replace with your Gemini API key
-
-    # Choose the Gemini model
-    model = genai.GenerativeModel('gemini-pro')
-
-    st.write("Ask Anything! Powered by Google GEMINI")
-
-    # User input
-    user_input = st.text_input("Question:")
-
-    if st.button("Get answer"):
-        # Clean the user input of special characters
-        cleaned_input = clean_text(user_input)
-
-        # Exit if the cleaned text is empty
-        if not cleaned_input:
-            st.warning("Invalid input. Please try again.")
-            st.stop()
-
-        # Additional information about INIF
-        additional_info = (
-            "If you want to collaborate with the project, subscribe on Hugging Face or GitHub\n"
-            "If you want to donate, please donate in Bitcoin: 3KcF1yrY44smTJpVW68m8dw8q64kPtzvtX"
-        )
-
-        # Add the command to act as an INIF informative chatbot
-        bot_command = (
-            "I am an informative data analyst chatbot named WiseOracle, working for you as an assistant. "
-            "If you have questions about anything, feel free to ask."
-            f"\n\n{additional_info}"
-        )
-
-        # Generate the response
-        full_response = generate_response(bot_command + cleaned_input, model)
-
-        # Display the generated response
-        st.success(full_response)
-
-if __name__ == "__main__":
-    main()
+# Actualizar historial de mensajes en la sesión de Streamlit
+st.session_state["messages"] = messages
